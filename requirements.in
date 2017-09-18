@@ -1,0 +1,7 @@
+click
+protobuf
+coverage
+
+# Tests
+pytest
+

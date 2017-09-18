@@ -1,0 +1,12 @@
+syntax = "proto3";
+package schema;
+
+message Block {
+    string previous_hash = 1;
+    bytes payload = 2;
+}
+
+message BlockchainDescription {
+    string genesis_hash = 1;
+    string head_hash = 2;
+}

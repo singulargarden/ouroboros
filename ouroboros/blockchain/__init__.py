@@ -102,8 +102,20 @@ def init(path, genesis_payload=None):
     return genesis_block.hash
 
 
-def list(path):
-    return []
+def list(root_path, show_genesis=False):
+    descr = load_descr(root_path)
+
+    current = descr.head_hash
+    last = descr.genesis_hash
+
+    while current != last:
+        block = load_block(root_path, current)
+        yield block
+        current = block.previous_hash
+
+    if show_genesis:
+        block = load_block(root_path, current)
+        yield block
 
 
 def get_payload(root_path, hash):

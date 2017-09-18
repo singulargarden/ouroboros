@@ -22,6 +22,15 @@ def test_i_can_init_a_blockchain_then_list_will_be_an_empty_generator(dir):
     assert list(ls) == []
 
 
+def test_i_can_add_a_block_ill_see_it_in_the_list(dir):
+    blockchain.init(dir)
+    blockchain.add(dir, BASE_PAYLOAD)
+
+    ls = blockchain.list(dir)
+
+    assert BASE_PAYLOAD in {x.payload for x in ls}
+
+
 def test_init_will_give_me_a_hash_I_can_retrieve(dir):
     genesis = blockchain.init(dir, genesis_payload=BASE_PAYLOAD)
     payload = blockchain.get_payload(dir, genesis)

@@ -146,7 +146,7 @@ def descr_with_head_hash(descr, head_hash):
     )
 
 
-def add(root_path, payload):
+def append(root_path, payload):
     descr = load_descr(root_path)
     block = make_block(descr.head_hash, payload)
     descr = descr_with_head_hash(descr, block.hash)

@@ -22,22 +22,13 @@ def test_i_can_init_a_blockchain_then_list_will_be_an_empty_generator(dir):
     assert list(ls) == []
 
 
-def test_i_can_add_a_block_ill_see_it_in_the_list(dir):
-    blockchain.init(dir)
-    blockchain.append(dir, BASE_PAYLOAD)
-
-    ls = blockchain.list(dir)
-
-    assert BASE_PAYLOAD in {x.payload for x in ls}
-
-
 def test_init_will_give_me_a_hash_I_can_retrieve(dir):
     genesis = blockchain.init(dir, genesis_payload=BASE_PAYLOAD)
     payload = blockchain.get_payload(dir, genesis)
     assert payload == BASE_PAYLOAD
 
 
-def test_add_to_a_non_blockchain_will_fail(dir):
+def test_append_to_a_non_blockchain_fails(dir):
     with pytest.raises(InvalidBlockchainException):
         blockchain.append(dir, BASE_PAYLOAD)
 
@@ -45,6 +36,15 @@ def test_add_to_a_non_blockchain_will_fail(dir):
 def test_add_to_a_blockchin_succeeds(dir):
     blockchain.init(dir)
     blockchain.append(dir, BASE_PAYLOAD)
+
+
+def test_i_can_append_a_block_ill_see_it_in_the_list(dir):
+    blockchain.init(dir)
+
+    blockchain.append(dir, BASE_PAYLOAD)
+    ls = blockchain.list(dir)
+
+    assert BASE_PAYLOAD in {x.payload for x in ls}
 
 
 def test_get_in_non_blockchain_throws_invalid_blockchain(dir):
@@ -59,7 +59,7 @@ def test_get_with_unknown_hash_throws_hash_not_found_exception(dir):
         blockchain.get_payload(dir, '42')
 
 
-def test_add_returns_me_a_hash_id_i_can_reuse_to_retrieve_the_payload(dir):
+def test_append_returns_me_a_hash_id_i_can_reuse_to_retrieve_the_payload(dir):
     blockchain.init(dir)
     hash_id = blockchain.append(dir, BASE_PAYLOAD)
     blockchain.get_payload(dir, hash_id)

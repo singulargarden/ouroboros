@@ -67,12 +67,12 @@ def test_append_returns_me_a_hash_id_i_can_reuse_to_retrieve_the_payload(dir):
 
 def test_descr_without_init_will_throw_blockchain_not_found(dir):
     with pytest.raises(InvalidBlockchainException):
-        blockchain.descr(dir)
+        blockchain.describe(dir)
 
 
 def test_descr_gives_me_the_hash_returned_by_init(dir):
     genesis = blockchain.init(dir)
-    descr = blockchain.descr(dir)
+    descr = blockchain.describe(dir)
 
     assert descr.head_hash == genesis
     assert descr.genesis_hash == genesis
@@ -81,7 +81,7 @@ def test_descr_gives_me_the_hash_returned_by_init(dir):
 def test_descr_gives_me_the_hash_of_the_last_add(dir):
     genesis = blockchain.init(dir)
     last_add = blockchain.append(dir, BASE_PAYLOAD)
-    descr = blockchain.descr(dir)
+    descr = blockchain.describe(dir)
 
     assert descr.head_hash == last_add
     assert descr.genesis_hash == genesis

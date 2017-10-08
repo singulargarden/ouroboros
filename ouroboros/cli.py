@@ -1,6 +1,7 @@
-import os
-import click
 import base64
+import os
+
+import click
 
 from ouroboros import blockchain as impl_blockchain
 

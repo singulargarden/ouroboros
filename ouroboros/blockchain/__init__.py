@@ -71,8 +71,14 @@ def block_file(root_path, hash_, mode):
 
 
 def make_block(previous_hash, payload):
+    """Produce a new block"""
+    # Generate a fingerprint of the new state:
+    # combine the fingerprint of the previous state and the content of the new state.
     hash_ = sha3(encode(previous_hash), payload)
+
+    # Prepare the content we store on disk
     bytes_ = encode(previous_hash) + b'\n' + payload
+
     return Block(hash=hash_, previous_hash=previous_hash, payload=payload,
                  bytes=bytes_)
 

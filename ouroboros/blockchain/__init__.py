@@ -108,20 +108,42 @@ def load_descr(root_path):
         return make_descr(decode(f.readline()[:-1]), decode(f.readline()))
 
 
+def prepare_block(root_path, payload):
+    # Load the current blockchain state
+    current_descr = load_descr(root_path)
+
+    # Create the new block attached to the current head of the chain
+    block = make_block(current_descr.head_hash, payload)
+
+    # Prepare the new blockchain state
+    new_descr = descr_with_head_hash(current_descr, block.hash)
+
+    return new_descr, block
+
+
+def store_new_block(root_path, new_descr, block):
+    """Write the new description and the new block to disk."""
+    with descr_file(root_path, 'wb') as d, block_file(root_path, block.hash, 'wb') as b:
+        b.write(block.bytes)
+        d.write(new_descr.bytes)
+    os.sync()
+
+
 def init(path, genesis_payload=None):
-    # Prepare the initial block
+    """
+    Init a folder to contain a new blockchain.
+    Generate the initial "Genesis" payload if not provided.
+    """
+    # Prepare the initial payload
     if genesis_payload is None:
         genesis_payload = bytes(str(time.time()), encoding="ascii")
 
+    # Create the block and the blockchain description
     genesis_block = make_block(ZERO_HASH, genesis_payload)
     descr = make_descr(genesis_block.hash, genesis_block.hash)
 
-    # TODO: assert no descr file -> do not init twice.
-    with descr_file(path, 'wb') as d, block_file(path, genesis_block.hash, 'wb') as b:
-        b.write(genesis_block.bytes)
-        d.write(descr.bytes)
-
-    os.sync()
+    # Store the block and it's description
+    store_new_block(path, descr, genesis_block)
 
     return genesis_block.hash
 
@@ -144,27 +166,6 @@ def list(root_path, show_genesis=False):
         yield block
 
 
-def prepare_block(root_path, payload):
-    # Load the current blockchain state
-    current_descr = load_descr(root_path)
-
-    # Create the new block attached to the current head of the chain
-    block = make_block(current_descr.head_hash, payload)
-
-    # Prepare the new blockchain state
-    new_descr = descr_with_head_hash(current_descr, block.hash)
-
-    return new_descr, block
-
-
-def store_new_block(root_path, new_descr, block):
-    """Write the new description and the new block to disk."""
-    with descr_file(root_path, 'wb') as d, block_file(root_path, block.hash, 'wb') as b:
-        b.write(block.bytes)
-        d.write(new_descr.bytes)
-    os.sync()
-
-
 def append(root_path, payload):
     """
     Append a new block to our chain using the given payload.
@@ -180,9 +181,9 @@ def add(root_path, proposed_block_hash, payload):
     Make sure we agree on the proposed hash add the block to our chain.
     Use this when a block comes from an external source.
     """
-    # Identical to append but we verify the hash first!
     new_descr, block = prepare_block(root_path, payload)
 
+    # Identical to append but we verify the hash!
     if block.hash != proposed_block_hash:
         raise HashDoNotMatchException()
 

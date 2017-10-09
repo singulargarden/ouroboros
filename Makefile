@@ -4,7 +4,7 @@ init:
 	pip install -r requirements.txt
 
 test:
-	pytest tests
+	python -m pytest tests
 
 ouroboros/schemas/*.py: ./schemas/*.proto
 	protoc -I=./schemas/  			\

@@ -1,14 +1,20 @@
 import pytest
 
 from ouroboros import blockchain
-from ouroboros.blockchain import InvalidBlockchainException, BlockNotFoundException
+from ouroboros.blockchain import InvalidBlockchainException, BlockNotFoundException, HashDoNotMatchException
 
 BASE_PAYLOAD = b"thisisapayload"
+ALT_PAYLOAD = b"thisisadifferentpayload"
 
 
 @pytest.fixture()
 def dir(tmpdir):
     return tmpdir.mkdir("test")
+
+
+@pytest.fixture()
+def dir2(tmpdir):
+    return tmpdir.mkdir("test_b")
 
 
 def test_i_can_init_a_blockchain_in_an_empty_folder(dir):
@@ -85,3 +91,33 @@ def test_descr_gives_me_the_hash_of_the_last_add(dir):
 
     assert descr.head_hash == last_add
     assert descr.genesis_hash == genesis
+
+
+def test_add_works_as_append(dir, dir2):
+    # chain 1
+    blockchain.init(dir, genesis_payload=BASE_PAYLOAD)
+    hash_added = blockchain.append(dir, BASE_PAYLOAD)
+
+    # chain 2
+    blockchain.init(dir2, genesis_payload=BASE_PAYLOAD)
+
+    # Act
+    blockchain.add(dir2, hash_added, BASE_PAYLOAD)
+
+    # Assert
+    ls1 = blockchain.list(dir)
+    ls2 = blockchain.list(dir2)
+    assert list(ls1) == list(ls2), "both list should be equal."
+
+
+def test_fails_when_chains_do_not_match(dir, dir2):
+    # chain 1
+    blockchain.init(dir, genesis_payload=BASE_PAYLOAD)
+    hash_added = blockchain.append(dir, BASE_PAYLOAD)
+
+    # chain 2, note the alternative payload
+    blockchain.init(dir2, genesis_payload=ALT_PAYLOAD)
+
+    # Act
+    with pytest.raises(HashDoNotMatchException):
+        blockchain.add(dir2, hash_added, BASE_PAYLOAD)

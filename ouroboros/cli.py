@@ -18,6 +18,10 @@ def blockchain():
 @click.option('--payload', help='payload to use for your genesis')
 def init(root=None, payload=None):
     path = root or CWD
+
+    if payload is not None:
+        payload = bytes(payload, encoding='utf-8')
+
     print(impl_blockchain.init(path, payload))
 
 
@@ -50,10 +54,14 @@ def append(root=None, payload=None):
 
 
 @blockchain.command()
-@click.argument('previous_hash')
+@click.option('--root', help='root PATH to use.')
+@click.argument('proposed_hash')
 @click.argument('payload')
-def add():
-    pass
+def add(root=None, proposed_hash=None, payload=None):
+    path = root or CWD
+
+    hash_ = impl_blockchain.add(path, proposed_hash, bytes(payload, encoding='utf-8'))
+    print(hash_)
 
 
 CLI = blockchain()

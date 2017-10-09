@@ -18,6 +18,10 @@ class BlockNotFoundException(Exception):
     pass
 
 
+class HashDoNotMatchException(Exception):
+    pass
+
+
 def sha3(*args):
     m = hashlib.sha384()
     for x in args:
@@ -134,17 +138,49 @@ def list(root_path, show_genesis=False):
         yield block
 
 
-def append(root_path, payload):
-    descr = load_descr(root_path)  # Load the current blockchain state
-    block = make_block(descr.head_hash, payload)  # Create the new block attached to the current head of the chain
-    new_descr = descr_with_head_hash(descr, block.hash)  # Prepare the new blockchain state
+def prepare_block(root_path, payload):
+    # Load the current blockchain state
+    current_descr = load_descr(root_path)
 
-    # Write everything to disk
+    # Create the new block attached to the current head of the chain
+    block = make_block(current_descr.head_hash, payload)
+
+    # Prepare the new blockchain state
+    new_descr = descr_with_head_hash(current_descr, block.hash)
+
+    return new_descr, block
+
+
+def store_new_block(root_path, new_descr, block):
+    """Write the new description and the new block to disk."""
     with descr_file(root_path, 'wb') as d, block_file(root_path, block.hash, 'wb') as b:
         b.write(block.bytes)
         d.write(new_descr.bytes)
     os.sync()
 
+
+def append(root_path, payload):
+    """
+    Append a new block to our chain using the given payload.
+    Returns the block to share with others participants.
+    """
+    new_descr, block = prepare_block(root_path, payload)
+    store_new_block(root_path, new_descr, block)
+    return block.hash
+
+
+def add(root_path, proposed_block_hash, payload):
+    """
+    Make sure we agree on the proposed hash add the block to our chain.
+    Use this when a block comes from an external source.
+    """
+    # Identical to append but we verify the hash first!
+    new_descr, block = prepare_block(root_path, payload)
+
+    if block.hash != proposed_block_hash:
+        raise HashDoNotMatchException()
+
+    store_new_block(root_path, new_descr, block)
     return block.hash
 
 

@@ -72,15 +72,17 @@ def block_file(root_path, hash_, mode):
 
 def make_block(previous_hash, payload):
     """Produce a new block"""
+    previous_hash_bytes = encode(previous_hash)
+
     # Generate a fingerprint of the new state:
-    # combine the fingerprint of the previous state and the content of the new state.
-    hash_ = sha3(encode(previous_hash), payload)
+    # combine the fingerprint of the previous state and the payload leading to the new state.
+    hash_ = sha3(previous_hash_bytes, payload)
 
     # Prepare the content we store on disk
-    bytes_ = encode(previous_hash) + b'\n' + payload
+    bytes_ = previous_hash_bytes + b'\n' + payload
 
-    return Block(hash=hash_, previous_hash=previous_hash, payload=payload,
-                 bytes=bytes_)
+    return Block(hash=hash_, previous_hash=previous_hash,
+                 payload=payload, bytes=bytes_)
 
 
 def load_block(root_path, hash):
@@ -94,12 +96,13 @@ def get_payload(root_path, hash):
         return block.payload
 
 
-def make_descr(genesis_hash, head_hash):
-    bytes_ = encode(f'{genesis_hash}\n{head_hash}')
-    return Descr(genesis_hash=genesis_hash, head_hash=head_hash, bytes=bytes_)
+def make_descr(genesis_hash, current_head_hash):
+    """Produce a new Description for the current state of the chain"""
+    bytes_ = encode(f'{genesis_hash}\n{current_head_hash}')
+    return Descr(genesis_hash=genesis_hash, head_hash=current_head_hash, bytes=bytes_)
 
 
-def descr_with_head_hash(descr, head_hash):
+def update_descr_with_new_head(descr, head_hash):
     return make_descr(descr.genesis_hash, head_hash)
 
 
@@ -113,15 +116,16 @@ def prepare_block(root_path, payload):
     current_descr = load_descr(root_path)
 
     # Create the new block attached to the current head of the chain
-    block = make_block(current_descr.head_hash, payload)
+    current_block_hash = current_descr.head_hash
+    new_block = make_block(current_block_hash, payload)
 
     # Prepare the new blockchain state
-    new_descr = descr_with_head_hash(current_descr, block.hash)
+    new_descr = update_descr_with_new_head(current_descr, new_block.hash)
 
-    return new_descr, block
+    return new_descr, new_block
 
 
-def store_new_block(root_path, new_descr, block):
+def update_storage(root_path, new_descr, block):
     """Write the new description and the new block to disk."""
     with descr_file(root_path, 'wb') as d, block_file(root_path, block.hash, 'wb') as b:
         b.write(block.bytes)
@@ -143,7 +147,7 @@ def init(path, genesis_payload=None):
     descr = make_descr(genesis_block.hash, genesis_block.hash)
 
     # Store the block and it's description
-    store_new_block(path, descr, genesis_block)
+    update_storage(path, descr, genesis_block)
 
     return genesis_block.hash
 
@@ -172,7 +176,7 @@ def append(root_path, payload):
     Returns the block to share with others participants.
     """
     new_descr, block = prepare_block(root_path, payload)
-    store_new_block(root_path, new_descr, block)
+    update_storage(root_path, new_descr, block)
     return block.hash
 
 
@@ -187,7 +191,7 @@ def add(root_path, proposed_block_hash, payload):
     if block.hash != proposed_block_hash:
         raise HashDoNotMatchException()
 
-    store_new_block(root_path, new_descr, block)
+    update_storage(root_path, new_descr, block)
     return block.hash
 
 
